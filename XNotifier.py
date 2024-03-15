@@ -5,6 +5,8 @@ from discord.ext import tasks
 class DiscordClient(discord.Client):
     async def setup_hook(self) -> None:
         self.lastMessage = ''
+        self.apiLimitExceededCount = 0
+
         self.checkXTask.start()
 
     async def on_ready(self):
@@ -25,6 +27,14 @@ class DiscordClient(discord.Client):
         if result.stderr != '':
             print(result.stderr)
 
+            if result.stderr.startswith("ERROR: API rate limit exceeded"):
+                self.apiLimitExceededCount += 1
+
+                if self.apiLimitExceededCount < 3:
+                    return
+            else:
+                self.apiLimitExceededCount = 0
+
             embed.title = 'Error'
             embed.description = result.stderr
             await channel.send(embed=embed)
@@ -32,6 +42,8 @@ class DiscordClient(discord.Client):
 
         elif result.stdout != '':
             print(result.stdout)
+
+            self.apiLimitExceededCount = 0
 
             if self.lastMessage != result.stdout:
                 self.lastMessage = result.stdout
