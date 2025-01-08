@@ -1,6 +1,7 @@
 from subprocess import PIPE, run
 import discord
 from discord.ext import tasks
+from discord import app_commands
 
 class DiscordClient(discord.Client):
     async def setup_hook(self) -> None:
@@ -8,6 +9,9 @@ class DiscordClient(discord.Client):
 
     async def on_ready(self):
         print(f"Logged on as {self.user}")
+
+        for guild in self.guilds:
+           await tree.sync(guild=discord.Object(id=guild.id))
 
     @tasks.loop(seconds=60)
     async def checkXTask(self):
@@ -52,4 +56,10 @@ with open('discord.auth', 'r') as handle:
         targets.append(dict(url = line[0], name = line[1], channelID = line[2], lastMessage = '' ))
 
 client = DiscordClient(intents=intents)
+
+tree = app_commands.CommandTree(client)
+@tree.command(name="getchannelid", description="Returns channel ID")
+async def get_channel_id_command(interaction:discord.Interaction):
+    await interaction.response.send_message(interaction.channel_id)
+
 client.run(discordAuth)
